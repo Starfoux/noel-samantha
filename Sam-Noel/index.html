@@ -1,0 +1,959 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <title>El Famoso Quizz</title>
+
+  <style>
+    :root{
+      --bg:#070707;
+      --text:#f3f3f3;
+      --muted:rgba(243,243,243,.72);
+
+      --gold:#c8a24a;
+      --gold2:#b68a2b;
+      --gold3:#e0c57a;
+
+      --ok:#7CFC98;
+      --bad:#ff6b6b;
+
+      --radius:20px;
+      --radius2:16px;
+      --shadow: 0 20px 60px rgba(0,0,0,.55);
+      --border: 1px solid rgba(200,162,74,.22);
+      --border2: 1px solid rgba(255,255,255,.08);
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(900px 460px at 50% 0%, rgba(200,162,74,.14) 0%, rgba(200,162,74,0) 55%),
+        radial-gradient(900px 460px at 50% 100%, rgba(200,162,74,.08) 0%, rgba(200,162,74,0) 65%),
+        linear-gradient(180deg, #0b0b0b, var(--bg));
+      display:flex;
+      justify-content:center;
+      padding: 22px 14px;
+    }
+
+    .wrap{ width: min(760px, 100%); margin:auto; }
+    .top{ text-align:center; margin-bottom: 14px; }
+
+    .brandline{
+      display:inline-flex; align-items:center; gap:10px;
+      padding: 8px 12px; border-radius: 999px;
+      border: 1px solid rgba(200,162,74,.22);
+      background: rgba(255,255,255,.03);
+      color: var(--muted);
+      font-size: 13px;
+      letter-spacing: .2px;
+    }
+    .dot{
+      width:8px;height:8px;border-radius:50%;
+      background: linear-gradient(90deg, var(--gold), var(--gold2));
+      box-shadow: 0 0 18px rgba(200,162,74,.45);
+    }
+
+    .title{
+      margin: 10px 0 6px 0;
+      font-family: Georgia, "Times New Roman", serif;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--gold);
+      font-size: clamp(30px, 6vw, 48px);
+      line-height: 1.06;
+    }
+
+    .subtitle{
+      margin: 0 auto 10px auto;
+      color: var(--muted);
+      font-size: 15px;
+      max-width: 56ch;
+      line-height: 1.5;
+    }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+      border: var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .inner{ padding: 16px; }
+
+    .statusRow{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:12px; margin-bottom: 10px;
+      color: var(--muted); font-size: 13px;
+    }
+    .progressWrap{ display:flex; align-items:center; gap:10px; min-width:0; }
+    .bar{
+      flex: 1 1 auto; min-width: 140px;
+      height: 8px; border-radius: 999px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(200,162,74,.18);
+      overflow:hidden;
+    }
+    .bar > div{
+      width: 0%; height: 100%;
+      background: linear-gradient(90deg, var(--gold), var(--gold2));
+      transition: width .35s ease;
+    }
+    .chip{
+      flex:0 0 auto;
+      padding: 6px 10px; border-radius: 999px;
+      border: 1px solid rgba(200,162,74,.22);
+      background: rgba(200,162,74,.06);
+      color: var(--gold3);
+      font-weight: 700;
+      letter-spacing: .2px;
+      font-size: 12px;
+    }
+
+    .screen{ display:none; }
+    .screen.active{ display:block; }
+
+    .actions{
+      display:flex; gap:10px; flex-wrap:wrap;
+      margin-top: 14px;
+      justify-content:center;
+    }
+    button{
+      appearance:none;
+      border:0;
+      border-radius: 16px;
+      padding: 12px 14px;
+      font-weight: 800;
+      cursor:pointer;
+      letter-spacing: .2px;
+      font-size: 14px;
+    }
+    button:disabled{ opacity:.55; cursor:not-allowed; }
+
+    .btnPrimary{
+      background: linear-gradient(90deg, var(--gold), var(--gold2));
+      color: #0a0a0a;
+      flex: 1 1 220px;
+      max-width: 420px;
+    }
+    .btnGhost{
+      background: rgba(255,255,255,.02);
+      color: var(--text);
+      border: 1px solid rgba(200,162,74,.28);
+      flex: 1 1 180px;
+      max-width: 320px;
+    }
+    .btnLink{
+      background: transparent;
+      color: var(--gold3);
+      border: 1px solid rgba(255,255,255,.10);
+      flex: 1 1 180px;
+      max-width: 320px;
+    }
+
+    #btnStart{
+      position: relative;
+      transform: translateZ(0);
+      box-shadow: 0 14px 40px rgba(0,0,0,.55);
+      animation: pulse 1.8s ease-in-out infinite;
+    }
+    #btnStart::after{
+      content:"";
+      position:absolute;
+      inset:-6px;
+      border-radius: 20px;
+      background: radial-gradient(closest-side, rgba(200,162,74,.25), rgba(200,162,74,0));
+      opacity:.6;
+      filter: blur(2px);
+      z-index:-1;
+    }
+    @keyframes pulse{
+      0%,100% { transform: translateY(0); }
+      50%     { transform: translateY(-3px); }
+    }
+
+    .fadeIn{ animation: fadeSlide .22s ease both; }
+    @keyframes fadeSlide{
+      from{ opacity:0; transform: translateY(6px); }
+      to{ opacity:1; transform: translateY(0); }
+    }
+
+    .q{
+      border-top: 1px solid rgba(255,255,255,.07);
+      padding-top: 14px;
+      margin-top: 14px;
+    }
+    .q:first-child{ border-top:none; padding-top:0; margin-top:0; }
+
+    .qTitle{ margin: 0 0 10px 0; font-size: 16px; line-height: 1.35; }
+    .options{ display:grid; gap:10px; }
+
+    .opt{
+      display:flex; gap:10px; align-items:flex-start;
+      padding: 12px 12px;
+      border-radius: var(--radius2);
+      border: 1px solid rgba(200,162,74,.18);
+      background: rgba(255,255,255,.02);
+      cursor:pointer;
+      transition: transform .05s ease, border-color .2s ease, background .2s ease;
+      user-select:none;
+    }
+    .opt:hover{
+      border-color: rgba(200,162,74,.40);
+      background: rgba(200,162,74,.05);
+    }
+    .opt.pop{ transform: scale(0.99); }
+
+    input[type="radio"], input[type="checkbox"]{
+      margin-top: 2px;
+      accent-color: var(--gold);
+      transform: scale(1.1);
+      flex: 0 0 auto;
+    }
+    .opt span{ flex: 1 1 auto; color: var(--text); line-height: 1.35; }
+
+    .photo{
+      width:100%;
+      border-radius: 18px;
+      overflow:hidden;
+      border: 1px solid rgba(200,162,74,.24);
+      background: rgba(255,255,255,.02);
+      margin-bottom: 12px;
+    }
+    .photo img{ width:100%; height:auto; display:block; }
+    .photo .caption{
+      padding: 10px 12px;
+      font-size: 13px;
+      color: var(--muted);
+      border-top: 1px solid rgba(255,255,255,.08);
+    }
+
+    .msg{
+      margin-top: 12px;
+      padding: 12px 12px;
+      border-radius: 16px;
+      border: var(--border2);
+      background: rgba(255,255,255,.03);
+      color: var(--muted);
+      display:none;
+      line-height: 1.45;
+      text-align:center;
+    }
+    .msg.ok{
+      display:block;
+      border-color: rgba(124,252,152,.35);
+      color: var(--ok);
+    }
+    .msg.bad{
+      display:block;
+      border-color: rgba(255,107,107,.35);
+      color: var(--bad);
+    }
+
+    .toast{
+      display:none;
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(200,162,74,.22);
+      background: rgba(255,255,255,.02);
+      color: rgba(243,243,243,.78);
+      font-size: 13px;
+      text-align:center;
+    }
+    .toast.show{ display:block; }
+
+    .revealBox{
+      margin-top: 14px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(200,162,74,.30);
+      background: rgba(200,162,74,.06);
+      padding: 22px;
+      text-align: center;
+    }
+    .revealTitle{
+      margin:0 0 8px 0;
+      font-family: Georgia, "Times New Roman", serif;
+      text-transform: uppercase;
+      letter-spacing: .9px;
+      color: var(--gold);
+      font-size: 22px;
+    }
+    .revealText{ margin:0; color: var(--text); line-height: 1.55; }
+
+    .codeBox{
+      margin-top: 14px;
+      padding: 14px 12px;
+      border-radius: 16px;
+      border: 1px dashed rgba(200,162,74,.55);
+      background: rgba(0,0,0,.22);
+      text-align: center;
+    }
+    .codeLabel{
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: .2px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+    .code{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 18px;
+      letter-spacing: 1px;
+      color: var(--gold3);
+      word-break: break-word;
+    }
+    .smallNoel{ margin-top: 10px; color: var(--muted); font-size: 13px; }
+
+    .copyRow{
+      margin-top: 10px;
+      display:flex;
+      justify-content:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .copyHint{
+      color: rgba(243,243,243,.72);
+      font-size: 13px;
+      min-height: 18px;
+    }
+
+    .santaPic{
+      margin-top: 14px;
+      border-radius: 18px;
+      border: 1px solid rgba(200,162,74,.22);
+      overflow:hidden;
+      background: rgba(255,255,255,.02);
+    }
+    .santaPic img{
+      display:block;
+      width: 100%;
+      max-width: 360px;
+      height:auto;
+      margin: 0 auto;
+      border-radius: 12px;
+    }
+    .santaPic .caption{
+      padding: 10px 12px;
+      color: var(--muted);
+      font-size: 13px;
+      border-top: 1px solid rgba(255,255,255,.08);
+      text-align:center;
+    }
+
+    .footerHint{
+      margin-top: 12px;
+      text-align:center;
+      color: rgba(243,243,243,.45);
+      font-size: 12px;
+    }
+
+    .confetti{
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 9999;
+    }
+    .confetti i{
+      position:absolute;
+      top:-12px;
+      width: 8px;
+      height: 12px;
+      border-radius: 3px;
+      opacity: .95;
+      animation: fall linear forwards;
+      transform: translateZ(0);
+    }
+    @keyframes fall{
+      to{ transform: translateY(calc(100vh + 40px)) rotate(360deg); }
+    }
+
+    @media (prefers-reduced-motion: reduce){
+      #btnStart{ animation:none; }
+      .bar > div{ transition:none; }
+      .opt{ transition:none; }
+      .fadeIn{ animation:none; }
+      .confetti{ display:none; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div class="brandline"><span class="dot"></span><span>Petit quizz pour une Princesse • Surprise à la clé</span></div>
+      <h1 class="title">El Famoso Quizz</h1>
+      <p class="subtitle">On va voir si tu mérites ton cadeau, cette fois je pense que tu auras toutes les réfs 😄</p>
+    </div>
+
+    <div class="card">
+      <div class="inner">
+
+        <div class="statusRow" aria-live="polite">
+          <div class="progressWrap" style="flex:1 1 auto;">
+            <div id="progressText">0/5</div>
+            <div class="bar" aria-hidden="true"><div id="barFill"></div></div>
+          </div>
+          <div class="chip" id="screenChip">Accueil</div>
+        </div>
+
+        <!-- Audio (mets ces fichiers à côté de index.html) -->
+        <audio id="bgm" preload="auto" loop>
+          <source src="music.mp3" type="audio/mpeg">
+        </audio>
+        <audio id="sfxOk" preload="auto">
+          <source src="ok.mp3" type="audio/mpeg">
+        </audio>
+        <audio id="sfxBad" preload="auto">
+          <source src="wrong.mp3" type="audio/mpeg">
+        </audio>
+
+        <section class="screen active" id="screenStart">
+          <div class="revealBox" style="background: rgba(255,255,255,.02); border-color: rgba(200,162,74,.22);">
+            <p class="revealText" style="margin:0;">
+              J’ai préparé un mini-jeu rien que pour toi.<br>
+              <strong>5 questions</strong>, quelques souvenirs… et une surprise 🎁
+              <br><br>
+              <span style="color: rgba(243,243,243,.72); font-size: 14px;">
+                Clique sur <strong>Commencer</strong> (et monte un peu le son 😄)
+              </span>
+            </p>
+          </div>
+
+          <div class="actions">
+            <button class="btnPrimary" type="button" id="btnStart">Commencer</button>
+            <button class="btnGhost" type="button" id="btnSkipExplain">Comment ça marche ?</button>
+          </div>
+
+          <div class="msg" id="howItWorks">
+            Tu réponds aux questions une par une. À la fin, si tout est bon… le cadeau se révèle ✨
+          </div>
+
+          <div class="toast" id="audioHint">
+            🔊 Si tu n’entends rien, active le son (et enlève le mode silencieux).
+          </div>
+
+          <div class="footerHint">Astuce : mets l’écran en luminosité moyenne, le doré ressort mieux.</div>
+        </section>
+
+        <section class="screen" id="screenQuiz">
+          <form id="quiz"></form>
+
+          <div class="actions">
+            <button class="btnPrimary" type="button" id="btnNext">Continuer</button>
+            <button class="btnGhost" type="button" id="btnReset">Recommencer</button>
+          </div>
+
+          <div class="msg" id="msg"></div>
+        </section>
+
+        <section class="screen" id="screenReveal">
+          <div class="revealBox">
+            <h2 class="revealTitle">🎄 Joyeux Noël Samantha</h2>
+            <p class="revealText">
+              Le premier,<br>
+              et sûrement pas le dernier,<br>
+              petit cadeau pour la meilleure des copines 💛
+              <br><br>
+              Une carte cadeau <strong>TEVEO</strong><br>
+              <em style="color: rgba(243,243,243,.72);">(trop de choix… j’ai préféré te laisser décider 😄)</em>
+            </p>
+
+            <div class="codeBox" style="margin-top:16px;">
+              <div class="codeLabel">🎁 Code cadeau</div>
+              <div class="code" id="giftCode">XXXX-XXXX-XXXX</div>
+
+              <div class="copyRow">
+                <button class="btnPrimary" type="button" id="btnCopy">Copier le code</button>
+                <button class="btnGhost" type="button" id="btnStopMusic">Couper la musique</button>
+              </div>
+              <div class="copyHint" id="copyHint"></div>
+
+              <div class="smallNoel"><strong>Joyeux Noël 🎄</strong></div>
+            </div>
+
+            <div class="santaPic">
+              <img src="pere-noel.jpg" alt="Photo surprise"
+                   onerror="this.style.display='none'; this.parentElement.querySelector('.caption').textContent='(Ajoute ici ta photo : renomme-la pere-noel.jpg et place-la à côté du fichier.)';">
+              <div class="caption">🎅 Pov si j'étais Mexicain</div>
+            </div>
+
+            <div class="actions">
+              <button class="btnLink" type="button" id="btnRestartFromEnd">Revoir le quiz</button>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="confetti" id="confetti" aria-hidden="true"></div>
+
+  <script>
+    const GIFT_CODE = "H5ED AB93 59H5 D82G";
+    const DOMENIL_IMAGE_SRC = "domenil.jpg";
+
+    // Audio
+    const bgm = document.getElementById("bgm");
+    const sfxOk = document.getElementById("sfxOk");
+    const sfxBad = document.getElementById("sfxBad");
+    const audioHint = document.getElementById("audioHint");
+
+    bgm.volume = 0.18;
+    sfxOk.volume = 0.35;
+    sfxBad.volume = 0.30;
+
+    function playSfx(a){
+      try{
+        a.currentTime = 0;
+        const p = a.play();
+        if(p && typeof p.catch === "function") p.catch(()=>{});
+      } catch(e){}
+    }
+
+    async function startMusic(){
+      try{
+        await bgm.play();
+        audioHint.classList.remove("show");
+      } catch(e){
+        audioHint.classList.add("show");
+      }
+    }
+    function stopMusic(){
+      try{ bgm.pause(); } catch(e){}
+    }
+
+    // Confettis légers
+    const confetti = document.getElementById("confetti");
+    function launchConfetti(){
+      confetti.innerHTML = "";
+      const pieces = 42;
+      const durationMin = 1100;
+      const durationMax = 1900;
+      const colors = ["rgba(200,162,74,.95)","rgba(224,197,122,.95)","rgba(255,255,255,.85)","rgba(255,175,200,.65)"];
+
+      for(let i=0;i<pieces;i++){
+        const el = document.createElement("i");
+        el.style.left = (Math.random()*100) + "vw";
+        el.style.width = (6 + Math.random()*6) + "px";
+        el.style.height = (10 + Math.random()*10) + "px";
+        el.style.background = colors[Math.floor(Math.random()*colors.length)];
+        el.style.animationDuration = (durationMin + Math.random()*(durationMax-durationMin)) + "ms";
+        el.style.animationDelay = (Math.random()*220) + "ms";
+        el.style.opacity = (0.6 + Math.random()*0.4).toFixed(2);
+        confetti.appendChild(el);
+      }
+      setTimeout(()=>{ confetti.innerHTML=""; }, 2600);
+    }
+
+    const QUESTIONS = [
+      {
+        id: "q1",
+        type: "radio",
+        title: "1) Notre rencontre, c’était quand ?",
+        options: ["14 juillet 2025","23 août 2025","1er septembre 2025","25 août 2025"],
+        answerIndex: 1
+      },
+      {
+        id: "q2",
+        type: "radio",
+        title: "2) Cette photo te rappelle quelque chose ?",
+        image: {
+          src: DOMENIL_IMAGE_SRC,
+          alt: "Lac de Doménil",
+          caption: "Petit indice : une barque, un lac… et un souvenir que je n’ai pas oublié."
+        },
+        options: [
+          "Un joli paysage",
+          "Un moment en détente",
+          "Une balade romantique en barque et une double pose pipi dans un KFC",
+          "Rien"
+        ],
+        answerIndex: 2
+      },
+      {
+        id: "q3",
+        type: "radio",
+        title: "3) Quand tu me dis que tu as “bien mangé ce soir”, ça veut dire…",
+        options: [
+          "Un poke bowl saumon-avocat",
+          "Un plat maison équilibré",
+          "Des pâtes fraîches avec une vraie sauce",
+          "Un yaourt, trois cacahuètes, deux carrés de chocolat et une tisane"
+        ],
+        answerIndex: 3
+      },
+      {
+        id: "q4",
+        type: "checkbox_all",
+        title: "4) Ce que j’admire chez toi (plusieurs réponses possibles)",
+        options: ["Ton courage","Ta douceur","Ta bonne humeur","Ta combativité"],
+      },
+      {
+        id: "q5",
+        type: "single",
+        title: "5) Combien de temps tu penses que nous allons rester ensemble ?",
+        options: ["Longtemps +++++++++++++++++++++++++++++++++"],
+        answerIndex: 0
+      }
+    ];
+
+    let step = 0;
+    const total = QUESTIONS.length;
+
+    const screenStart = document.getElementById("screenStart");
+    const screenQuiz = document.getElementById("screenQuiz");
+    const screenReveal = document.getElementById("screenReveal");
+
+    const progressText = document.getElementById("progressText");
+    const barFill = document.getElementById("barFill");
+    const screenChip = document.getElementById("screenChip");
+
+    const quizEl = document.getElementById("quiz");
+    const msgEl = document.getElementById("msg");
+    const howItWorks = document.getElementById("howItWorks");
+    const giftCodeEl = document.getElementById("giftCode");
+    const btnNext = document.getElementById("btnNext");
+
+    // Verrou anti double-advance (corrige le saut q2)
+    let advancing = false;
+    let advanceTimer = null;
+
+    function scheduleNext(){
+      if(advancing) return;
+      advancing = true;
+      btnNext.disabled = true;
+      clearTimeout(advanceTimer);
+      advanceTimer = setTimeout(() => {
+        goNext();
+      }, 420);
+    }
+
+    // Reveal actions
+    const btnCopy = document.getElementById("btnCopy");
+    const copyHint = document.getElementById("copyHint");
+    const btnStopMusic = document.getElementById("btnStopMusic");
+
+    giftCodeEl.textContent = GIFT_CODE;
+
+    document.getElementById("btnStart").addEventListener("click", async () => {
+      await startMusic();
+      switchScreen("quiz");
+      step = 0;
+      renderStep();
+    });
+
+    document.getElementById("btnSkipExplain").addEventListener("click", () => {
+      howItWorks.className = "msg";
+      howItWorks.style.display = (howItWorks.style.display === "block") ? "none" : "block";
+    });
+
+    btnNext.addEventListener("click", onNext);
+    document.getElementById("btnReset").addEventListener("click", resetAll);
+    document.getElementById("btnRestartFromEnd").addEventListener("click", () => {
+      resetAll();
+      switchScreen("quiz");
+      renderStep();
+      window.scrollTo({top:0, behavior:"smooth"});
+    });
+
+    btnStopMusic.addEventListener("click", () => {
+      stopMusic();
+      btnStopMusic.textContent = "Musique coupée";
+      setTimeout(()=>{ btnStopMusic.textContent = "Couper la musique"; }, 1200);
+    });
+
+    btnCopy.addEventListener("click", async () => {
+      const text = giftCodeEl.textContent.trim();
+      copyHint.textContent = "";
+      try{
+        if(navigator.clipboard && navigator.clipboard.writeText){
+          await navigator.clipboard.writeText(text);
+        } else {
+          const ta = document.createElement("textarea");
+          ta.value = text;
+          ta.style.position = "fixed";
+          ta.style.left = "-9999px";
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          document.body.removeChild(ta);
+        }
+        copyHint.textContent = "✅ Copié !";
+      } catch(e){
+        copyHint.textContent = "Copie manuelle : " + text;
+      }
+      setTimeout(()=>{ copyHint.textContent = ""; }, 1800);
+    });
+
+    function switchScreen(which){
+      [screenStart, screenQuiz, screenReveal].forEach(s => s.classList.remove("active"));
+      if(which === "start"){
+        screenStart.classList.add("active");
+        screenChip.textContent = "Accueil";
+      } else if(which === "quiz"){
+        screenQuiz.classList.add("active");
+        screenChip.textContent = "Quiz";
+      } else {
+        screenReveal.classList.add("active");
+        screenChip.textContent = "Cadeau";
+      }
+      updateProgress();
+      clearMsg();
+    }
+
+    function updateProgress(){
+      const answeredCount = screenQuiz.classList.contains("active") ? step : 0;
+      progressText.textContent = `${answeredCount}/${total}`;
+      const pct = screenReveal.classList.contains("active")
+        ? 100
+        : Math.round((answeredCount / total) * 100);
+      barFill.style.width = `${pct}%`;
+    }
+
+    function clearMsg(){
+      msgEl.className = "msg";
+      msgEl.style.display = "none";
+      msgEl.textContent = "";
+    }
+
+    function showMsg(type, text){
+      msgEl.className = "msg " + (type === "ok" ? "ok" : "bad");
+      msgEl.textContent = text;
+      msgEl.style.display = "block";
+    }
+
+    function renderStep(){
+      // Reset verrou à chaque nouvelle question
+      advancing = false;
+      clearTimeout(advanceTimer);
+      btnNext.disabled = false;
+
+      clearMsg();
+
+      const q = QUESTIONS[step];
+      quizEl.innerHTML = "";
+
+      const section = document.createElement("section");
+      section.className = "q fadeIn";
+
+      const h = document.createElement("h3");
+      h.className = "qTitle";
+      h.textContent = q.title;
+      section.appendChild(h);
+
+      if(q.image){
+        const box = document.createElement("div");
+        box.className = "photo";
+        const img = document.createElement("img");
+        img.src = q.image.src;
+        img.alt = q.image.alt || "";
+        img.loading = "lazy";
+        img.onerror = () => {
+          img.style.display = "none";
+          cap.textContent = "(Ajoute ta photo du lac : renomme-la domenil.jpg et place-la à côté du fichier.)";
+        };
+        const cap = document.createElement("div");
+        cap.className = "caption";
+        cap.textContent = q.image.caption || "";
+        box.appendChild(img);
+        box.appendChild(cap);
+        section.appendChild(box);
+      }
+
+      const opts = document.createElement("div");
+      opts.className = "options";
+
+      const attachPop = (label) => {
+        label.classList.add("pop");
+        setTimeout(()=>label.classList.remove("pop"), 80);
+      };
+
+      const onChoice = () => {
+        const qNow = QUESTIONS[step];
+        if(qNow.type === "radio" || qNow.type === "single"){
+          const ok = validateCurrentStep(true);
+          if(ok) scheduleNext(); // << utilise le verrou
+        }
+      };
+
+      if(q.type === "radio"){
+        q.options.forEach((optText, idx) => {
+          const id = `${q.id}_${idx}`;
+          const label = document.createElement("label");
+          label.className = "opt";
+          label.setAttribute("for", id);
+
+          const input = document.createElement("input");
+          input.type = "radio";
+          input.name = q.id;
+          input.id = id;
+          input.value = String(idx);
+
+          const span = document.createElement("span");
+          span.textContent = optText;
+
+          label.appendChild(input);
+          label.appendChild(span);
+
+          label.addEventListener("click", () => {
+            attachPop(label);
+            setTimeout(onChoice, 0);
+          });
+
+          opts.appendChild(label);
+        });
+      }
+
+      if(q.type === "checkbox_all"){
+        q.options.forEach((optText, idx) => {
+          const id = `${q.id}_${idx}`;
+          const label = document.createElement("label");
+          label.className = "opt";
+          label.setAttribute("for", id);
+
+          const input = document.createElement("input");
+          input.type = "checkbox";
+          input.name = q.id;
+          input.id = id;
+          input.value = String(idx);
+
+          const span = document.createElement("span");
+          span.textContent = optText;
+
+          label.appendChild(input);
+          label.appendChild(span);
+
+          label.addEventListener("click", () => attachPop(label));
+
+          opts.appendChild(label);
+        });
+      }
+
+      if(q.type === "single"){
+        const id = `${q.id}_0`;
+        const label = document.createElement("label");
+        label.className = "opt";
+        label.setAttribute("for", id);
+
+        const input = document.createElement("input");
+        input.type = "radio";
+        input.name = q.id;
+        input.id = id;
+        input.value = "0";
+
+        const span = document.createElement("span");
+        span.textContent = q.options[0];
+
+        label.appendChild(input);
+        label.appendChild(span);
+
+        label.addEventListener("click", () => {
+          attachPop(label);
+          setTimeout(onChoice, 0);
+        });
+
+        opts.appendChild(label);
+      }
+
+      section.appendChild(opts);
+      quizEl.appendChild(section);
+
+      screenChip.textContent = `Question ${step + 1}/${total}`;
+      updateProgress();
+
+      const firstInput = quizEl.querySelector("input");
+      if(firstInput) firstInput.focus({preventScroll:true});
+
+      btnNext.textContent = (step === total - 1) ? "Découvrir le cadeau" : "Continuer";
+      btnNext.disabled = false;
+    }
+
+    function validateCurrentStep(withSfx){
+      const q = QUESTIONS[step];
+
+      if(q.type === "radio" || q.type === "single"){
+        const checked = quizEl.querySelector(`input[name="${q.id}"]:checked`);
+        if(!checked){
+          showMsg("bad", "Choisis une réponse 🙂");
+          return false;
+        }
+        const chosen = Number(checked.value);
+        if(chosen !== q.answerIndex){
+          if(withSfx) playSfx(sfxBad);
+          showMsg("bad", "Wrong 😄 Essaie encore.");
+          return false;
+        }
+        if(withSfx) playSfx(sfxOk);
+        showMsg("ok", "✅ Bien joué !");
+        return true;
+      }
+
+      if(q.type === "checkbox_all"){
+        const checks = [...quizEl.querySelectorAll(`input[name="${q.id}"]`)];
+        const checkedCount = checks.filter(i => i.checked).length;
+        if(checkedCount !== checks.length){
+          if(withSfx) playSfx(sfxBad);
+          showMsg("bad", "Tu peux tout cocher 😉");
+          return false;
+        }
+        if(withSfx) playSfx(sfxOk);
+        showMsg("ok", "✅ Parfait !");
+        return true;
+      }
+
+      return false;
+    }
+
+    function onNext(){
+      clearMsg();
+      const ok = validateCurrentStep(true);
+      if(!ok) return;
+      scheduleNext(); // << utilise le verrou
+    }
+
+    function goNext(){
+      step += 1;
+      updateProgress();
+
+      if(step >= total){
+        switchScreen("reveal");
+        progressText.textContent = `${total}/${total}`;
+        barFill.style.width = "100%";
+        window.scrollTo({top:0, behavior:"smooth"});
+        launchConfetti();
+        return;
+      }
+
+      renderStep();
+      window.scrollTo({top:0, behavior:"smooth"});
+    }
+
+    function resetAll(){
+      step = 0;
+      advancing = false;
+      clearTimeout(advanceTimer);
+
+      clearMsg();
+      switchScreen("start");
+      howItWorks.style.display = "none";
+      progressText.textContent = `0/${total}`;
+      barFill.style.width = "0%";
+      btnNext.disabled = false;
+      copyHint.textContent = "";
+      btnStopMusic.textContent = "Couper la musique";
+    }
+
+    // init
+    giftCodeEl.textContent = GIFT_CODE;
+    resetAll();
+  </script>
+</body>
+</html>
